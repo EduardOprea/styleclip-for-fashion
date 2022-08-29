@@ -8,7 +8,7 @@ from torch import optim
 from tqdm import tqdm
 
 from criteria.clip_loss import CLIPLoss
-from criteria.id_loss import IDLoss
+# from criteria.id_loss import IDLoss
 from mapper.training.train_utils import STYLESPACE_DIMENSIONS
 from models.stylegan2.model import Generator
 import clip
@@ -60,7 +60,7 @@ def main(args):
         latent.requires_grad = True
 
     clip_loss = CLIPLoss(args)
-    id_loss = IDLoss(args)
+    #id_loss = IDLoss(args)
 
     if args.work_in_stylespace:
         optimizer = optim.Adam(latent, lr=args.lr)
@@ -78,10 +78,11 @@ def main(args):
 
         c_loss = clip_loss(img_gen, text_inputs)
 
-        if args.id_lambda > 0:
-            i_loss = id_loss(img_gen, img_orig)[0]
-        else:
-            i_loss = 0
+        i_loss = 0
+        # if args.id_lambda > 0:
+        #     i_loss = id_loss(img_gen, img_orig)[0]
+        # else:
+        #     i_loss = 0
 
         if args.mode == "edit":
             if args.work_in_stylespace:
