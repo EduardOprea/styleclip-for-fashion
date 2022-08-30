@@ -1,4 +1,20 @@
-def main():
+import click
+
+
+@click.command()
+@click.pass_context
+@click.option('--checkpoint', help='Path to network pikle', required=True)
+@click.option('--outdir', help='Where to save the output images', type=str, required=True, metavar='DIR')
+@click.option('--trunc', 'truncation_psi', type=float, help='Truncation psi', default=1, show_default=True)
+@click.option('--noise-mode', help='Noise mode', type=click.Choice(['const', 'random', 'none']), default='const', show_default=True)
+@click.option('--description', help='Description of generated image', required=True)
+def main(ctx: click.Context,
+    checkpoint: str,
+    truncation_psi: float,
+    noise_mode: str,
+    outdir: str,
+    description: str):
+
   experiment_type = 'edit' #@param ['edit', 'free_generation']
 
   description = 'A shirt with floral print' #@param {type:"string"}
@@ -23,7 +39,7 @@ def main():
   #@title Additional Arguments
   args = {
       "description": description,
-      "ckpt": "pretrained/fashiongan_hm.pkl",
+      "ckpt": checkpoint,
       "stylegan_size": 512,
       "lr_rampup": 0.05,
       "lr": 0.1,
@@ -35,10 +51,10 @@ def main():
       "latent_path": latent_path,
       "truncation": 0.7,
       "save_intermediate_image_every": 1 if create_video else 20,
-      "results_dir": "results",
+      "results_dir": outdir,
       "ir_se50_weights": "",
-      "noise_mode": "const",
-      "truncation_psi": 1.0
+      "noise_mode": noise_mode,
+      "truncation_psi": truncation_psi
   }
 
 
