@@ -2,3 +2,6 @@
 /latents/
 /results/
 /mine/
+/models/stylegan2/
+__pycache__/
+.vscode/
