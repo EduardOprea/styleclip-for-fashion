@@ -49,6 +49,61 @@ def main(args):
     img_orig = (img_orig.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
     PIL.Image.fromarray(img_orig[0].cpu().numpy(), 'RGB').save(f'{args.results_dir}/initial_image.png')
     
+    # no style space momentarily
+    # detaching
+    latent = latent_code_init.detach().clone()
+    latent.requires_grad = True
+
+    clip_loss = CLIPLoss(args)
+    
+    if args.work_in_stylespace:
+        optimizer = optim.Adam(latent, lr=args.lr)
+    else:
+        optimizer = optim.Adam([latent], lr=args.lr)
+
+    pbar = tqdm(range(args.step))
+    torch.autograd.set_detect_anomaly(True)
+    for i in pbar:
+        t = i / args.step
+        lr = get_lr(t, args.lr)
+        optimizer.param_groups[0]["lr"] = lr
+
+        img_gen = G(latent, label, truncation_psi= args.truncation_psi, noise_mode=args.noise_mode)
+
+        c_loss = clip_loss(img_gen, text_inputs)
+
+        if args.mode == "edit":
+            if args.work_in_stylespace:
+                l2_loss = sum([((latent_code_init[c] - latent[c]) ** 2).sum() for c in range(len(latent_code_init))])
+            else:
+                l2_loss = ((latent_code_init - latent) ** 2).sum()
+            loss = c_loss + args.l2_lambda * l2_loss
+        else:
+            loss = c_loss
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        pbar.set_description(
+            (
+                f"loss: {loss.item():.4f};"
+            )
+        )
+        if args.save_intermediate_image_every > 0 and i % args.save_intermediate_image_every == 0:
+            with torch.no_grad():
+                img_gen = G(latent, label, truncation_psi=args.truncation_psi, noise_mode=args.noise_mode)
+                img_gen = (img_gen.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
+            PIL.Image.fromarray(img_gen[0].cpu().numpy(), 'RGB').save(f'{args.results_dir}/step{i}.png')
+    
+    
+    if args.mode == "edit":
+        final_result = torch.cat([img_orig, img_gen])
+    else:
+        final_result = img_gen
+
+    return final_result
+
 def main2(args):
     ensure_checkpoint_exists(args.ckpt)
     text_inputs = torch.cat([clip.tokenize(args.description)]).cuda()
@@ -84,10 +139,7 @@ def main2(args):
         latent = latent_code_init.detach().clone()
         latent.requires_grad = True
 
-    img_orig = (img_orig.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
-    PIL.Image.fromarray(img_orig[0].cpu().numpy(), 'RGB').save(f'results/byconverting.png')
 
-    torchvision.utils.save_image(img_orig, f"results/original.jpg", normalize=True, range=(-1, 1))
     clip_loss = CLIPLoss(args)
     #id_loss = IDLoss(args)
 

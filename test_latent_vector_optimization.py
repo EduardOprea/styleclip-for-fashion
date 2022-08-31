@@ -9,22 +9,24 @@ sys.path.append(os.path.join(os.getcwd(), "models/stylegan2adapytorch"))
 @click.option('--checkpoint', help='Path to network pikle', required=True)
 @click.option('--outdir', help='Where to save the output images', type=str, required=True, metavar='DIR')
 @click.option('--trunc', 'truncation_psi', type=float, help='Truncation psi', default=1, show_default=True)
+@click.option('--steps', type=int, help='Number of steps', default=20, show_default=True)
 @click.option('--noise-mode', help='Noise mode', type=click.Choice(['const', 'random', 'none']), default='const', show_default=True)
 @click.option('--description', help='Description of generated image', required=True)
+@click.option('--save-every', type=int, help='Save intermediate image every x steps', default=1)
 def main(ctx: click.Context,
     checkpoint: str,
     truncation_psi: float,
     noise_mode: str,
     outdir: str,
-    description: str):
+    description: str,
+    steps: int,
+    save_every: int):
 
   experiment_type = 'edit' #@param ['edit', 'free_generation']
 
-  description = 'A shirt with floral print' #@param {type:"string"}
-
   latent_path = None #@param {type:"string"}
 
-  optimization_steps = 1 #@param {type:"number"}
+  
 
   l2_lambda = 0.008 #@param {type:"number"}
 
@@ -46,7 +48,7 @@ def main(ctx: click.Context,
       "stylegan_size": 512,
       "lr_rampup": 0.05,
       "lr": 0.1,
-      "step": optimization_steps,
+      "step": steps,
       "mode": experiment_type,
       "l2_lambda": l2_lambda,
       "id_lambda": id_lambda,
